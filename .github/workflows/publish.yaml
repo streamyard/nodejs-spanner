@@ -20,7 +20,7 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@streamyard'
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
       - name: Build Package
         run: npm pack .
       - name: Publish
