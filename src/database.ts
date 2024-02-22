@@ -2793,10 +2793,13 @@ class Database extends common.GrpcServiceObject {
     query: string | ExecuteSqlRequest,
     options?: TimestampBounds
   ): PartialResultStream {
+    console.log('nodejs-spanner::runStream called');
     const proxyStream: Transform = through.obj();
 
     this.pool_.getSession((err, session) => {
+      console.log('nodejs-spanner::inside getSession');
       if (err) {
+        console.log('nodejs-spanner::inside getSession error');
         proxyStream.destroy(err);
         return;
       }
@@ -2807,10 +2810,23 @@ class Database extends common.GrpcServiceObject {
 
       let dataReceived = false;
       let dataStream = snapshot.runStream(query);
-      const endListener = () => snapshot.end();
+      const endListener = () => {
+        console.log('nodejs-spanner::endListener');
+        return snapshot.end();
+      };
       dataStream
-        .once('data', () => (dataReceived = true))
+        .once('data', () => {
+          console.log('nodejs-spanner::dataStream data');
+          dataReceived = true;
+        })
         .once('error', err => {
+          console.log('nodejs-spanner::dataStream error', {
+            err,
+            dataReceived,
+            isSessionNotFoundError: isSessionNotFoundError(
+              err as grpc.ServiceError
+            ),
+          });
           if (
             !dataReceived &&
             isSessionNotFoundError(err as grpc.ServiceError)
@@ -2827,15 +2843,23 @@ class Database extends common.GrpcServiceObject {
             dataStream.end();
             snapshot.end();
             // Create a new data stream and add it to the end user stream.
+            console.log('nodejs-spanner::retrying query');
             dataStream = this.runStream(query, options);
             dataStream.pipe(proxyStream);
           } else {
+            console.log('nodejs-spanner::destroying proxyStream');
             proxyStream.destroy(err);
             snapshot.end();
           }
         })
-        .on('stats', stats => proxyStream.emit('stats', stats))
-        .on('response', response => proxyStream.emit('response', response))
+        .on('stats', stats => {
+          console.log('nodejs-spanner::dataStream', stats);
+          return proxyStream.emit('stats', stats);
+        })
+        .on('response', response => {
+          console.log('nodejs-spanner::dataStream response');
+          proxyStream.emit('response', response);
+        })
         .once('end', endListener)
         .pipe(proxyStream);
     });
