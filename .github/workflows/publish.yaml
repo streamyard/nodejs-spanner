@@ -25,6 +25,8 @@ jobs:
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Package
         run: npm pack .
+        env:
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish
         if: ${{ github.ref == 'refs/heads/main' }}
         run: TARBALL=$(ls -1 -t *.tgz | head -1);npm publish --access restricted "$TARBALL"
