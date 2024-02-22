@@ -1,5 +1,5 @@
 {
-  "name": "@google-cloud/spanner",
+  "name": "@streamyard/spanner",
   "description": "Cloud Spanner Client Library for Node.js",
   "version": "7.3.0-1",
   "license": "Apache-2.0",
